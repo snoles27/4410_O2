@@ -134,8 +134,8 @@ let
     vlines([greenCountMin,greenCountMax], λlow, λhigh, color = "green",linestyle = "dashed", label = "Fringe Counts (Green Light)")
 
     
-    vlines([minimum(counts)], minimum(bandwidthsWhite), maximum(bandwidthsWhite), color = "red", linewidth = 5, label = "Bandwith Range (White Light)")
-    vlines([minimum(counts)], minimum(bandwidthsGreen), maximum(bandwidthsGreen), color = "green", linewidth = 5, label = "Bandwith Range (Green Light)")
+    # vlines([minimum(counts)], minimum(bandwidthsWhite), maximum(bandwidthsWhite), color = "red", linewidth = 5, label = "Bandwith Range (White Light)")
+    # vlines([minimum(counts)], minimum(bandwidthsGreen), maximum(bandwidthsGreen), color = "green", linewidth = 5, label = "Bandwith Range (Green Light)")
     
     legend()
 
