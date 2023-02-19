@@ -111,13 +111,15 @@ let
     bandwidthsWhite = getBandWidths(counts, λr, whiteCountMin, whiteCountMax)
     bandwidthsGreen = getBandWidths(counts, λr, greenCountMin, greenCountMax)
 
+    PyPlot.matplotlib[:rc]("text", usetex=false) # allow tex rendering
+    rc("font", family="sans-serif", weight="normal", size = "11")
     pygui(true)
-    plot(counts, λr, label = "\$ \\lambda_{mid} = 540 \\mathrm{nm}\$")
+    plot(counts, λr, label = "\$ \\lambda_{\\mathrm{mid}} = 540 \\mathrm{nm}\$")
     ax = gca()
 
     # add new limits
     ax[:set_xlim]([minimum(counts),maximum(counts)])
-    ax[:set_ylim]([λlow,λhigh])
+    ax[:set_ylim]([0,λhigh])
     y1_w = [minimum(bandwidthsWhite), minimum(bandwidthsWhite)]
     y2_w = [maximum(bandwidthsWhite), maximum(bandwidthsWhite)]
     x_w = [minimum(counts), whiteCountMax]
@@ -130,8 +132,8 @@ let
 
     ylabel("Bandwidth (nm)")
     xlabel("Fringe Count")
-    vlines([whiteCountMin,whiteCountMax], λlow, λhigh, color = "red", linestyle = "dashed", label = "Fringe Count Range (White Light)")
-    vlines([greenCountMin,greenCountMax], λlow, λhigh, color = "green",linestyle = "dashed", label = "Fringe Count Range (Green Light)")
+    vlines([whiteCountMin,whiteCountMax], 0, λhigh, color = "red", linestyle = "dashed", label = "Fringe Count Range (White Light)")
+    vlines([greenCountMin,greenCountMax], 0, λhigh, color = "green",linestyle = "dashed", label = "Fringe Count Range (Green Light)")
 
     
     # vlines([minimum(counts)], minimum(bandwidthsWhite), maximum(bandwidthsWhite), color = "red", linewidth = 5, label = "Bandwith Range (White Light)")
