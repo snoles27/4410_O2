@@ -91,8 +91,8 @@ end
 
 let
 
-    λmid = 540.0 #nm
-    λlow = 50
+    λmid = 565.0 #nm
+    λlow = 200
     λhigh = 600
     λr = range(λlow, λhigh, 3000)
 
@@ -104,36 +104,36 @@ let
     whiteCountMin = 19
     whiteCountMax = 20
 
-    greenCountMin = 57
-    greenCountMax = 65
+    # greenCountMin = 57
+    # greenCountMax = 65
 
     #setting up bandwidth calcs
     bandwidthsWhite = getBandWidths(counts, λr, whiteCountMin, whiteCountMax)
-    bandwidthsGreen = getBandWidths(counts, λr, greenCountMin, greenCountMax)
+    # bandwidthsGreen = getBandWidths(counts, λr, greenCountMin, greenCountMax)
 
     PyPlot.matplotlib[:rc]("text", usetex=false) # allow tex rendering
     rc("font", family="sans-serif", weight="normal", size = "11")
     pygui(true)
-    plot(counts, λr, label = "\$ \\lambda_{\\mathrm{mid}} = 540 \\mathrm{nm}\$")
+    plot(counts, λr, label = "\$ \\lambda_{\\mathrm{mid}} = " * string(trunc(Int, λmid)) * " \\mathrm{nm}\$")
     ax = gca()
 
     # add new limits
     ax[:set_xlim]([minimum(counts),maximum(counts)])
-    ax[:set_ylim]([0,λhigh])
+    ax[:set_ylim]([λlow,λhigh])
     y1_w = [minimum(bandwidthsWhite), minimum(bandwidthsWhite)]
     y2_w = [maximum(bandwidthsWhite), maximum(bandwidthsWhite)]
     x_w = [minimum(counts), whiteCountMax]
     fill_between(x_w, y2_w, y1_w, where=(y1_w .< y2_w), color = "red", alpha = 0.3)
 
-    y1_g = [minimum(bandwidthsGreen), minimum(bandwidthsGreen)]
-    y2_g = [maximum(bandwidthsGreen), maximum(bandwidthsGreen)]
-    x_g = [minimum(counts), greenCountMax]
-    fill_between(x_g, y2_g, y1_g, where=(y1_g .< y2_g), color = "green", alpha = 0.3)
+    # y1_g = [minimum(bandwidthsGreen), minimum(bandwidthsGreen)]
+    # y2_g = [maximum(bandwidthsGreen), maximum(bandwidthsGreen)]
+    # x_g = [minimum(counts), greenCountMax]
+    # fill_between(x_g, y2_g, y1_g, where=(y1_g .< y2_g), color = "green", alpha = 0.3)
 
     ylabel("Bandwidth (nm)")
     xlabel("Fringe Count")
     vlines([whiteCountMin,whiteCountMax], 0, λhigh, color = "red", linestyle = "dashed", label = "Fringe Count Range (White Light)")
-    vlines([greenCountMin,greenCountMax], 0, λhigh, color = "green",linestyle = "dashed", label = "Fringe Count Range (Green Light)")
+    # vlines([greenCountMin,greenCountMax], 0, λhigh, color = "green",linestyle = "dashed", label = "Fringe Count Range (Green Light)")
 
     
     # vlines([minimum(counts)], minimum(bandwidthsWhite), maximum(bandwidthsWhite), color = "red", linewidth = 5, label = "Bandwith Range (White Light)")
