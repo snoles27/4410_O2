@@ -10,7 +10,7 @@ let
     mirrorDistance = data[:,2]
     errorBar = .089 .* micDistance /2
 
-    x = [.207, .0704] #from google sheets fit
+    x = [.207, .0704] #line data [m,b] from google sheets fit
 
     xplotMin = 75
     xplotMax = 155
@@ -19,7 +19,7 @@ let
     line = x[1] * linex .+ x[2]
 
     PyPlot.matplotlib[:rc]("text", usetex=false) # allow tex rendering
-    rc("font", family="sans-serif", weight="normal", size = "11")
+    rc("font", family="times", weight="normal", size = "12")
     pygui(true)
     # scatter(micDistance, mirrorDistance)
     xlabel("Micrometer Distance (\$\\mu \$m)")
@@ -29,7 +29,7 @@ let
     ax = gca()
     ax[:set_ylim]([minimum(mirrorDistance)-5 ,maximum(mirrorDistance) + 7])
     ax[:set_xlim](xplotMin, xplotMax)
-    plot(linex, line, label = "Linear Fit, \$ \\alpha \$ = " * string(x[1]))
+    plot(linex, line, label = "Linear Fit, ratio = " * string(x[1]))
     legend()
     
 
