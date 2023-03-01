@@ -2,11 +2,28 @@ using CSV
 using DataFrames
 
 
+function pullNumber(input)
+
+    if(input[end] == '*')
+        return parse(Float64, input[1:end-1])
+    else
+        return parse(Float64, input[1:end-1])
+    end
+
+end
+
 function getNeonData(file::String)
 
     data = CSV.read(file, DataFrame)
+    wlens = data[:,1]
+    inten = data[:,4]
+    numInten = zeros(length(inten), 1)
 
-    return data[:, 1:3]
+    for i = 1:length(inten)
+        numInten[i] = pullNumber(inten[i])
+    end
+
+    return hcat(wlens, numInten)
 
 end
 
@@ -27,6 +44,9 @@ function wnum2wlen(wavenumber::Float64)
 end
 
 let 
+
+    data = getNeonData("S7/Ne_I.csv")
+
 
 
 end
