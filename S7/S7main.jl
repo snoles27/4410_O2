@@ -7,10 +7,10 @@ using Statistics
 
 function pullNumber(input)
 
-    if(input[end] == '*')
+    if(input[end] == '*' || input[end] == 'f')
         return parse(Float64, input[1:end-1])
     else
-        return parse(Float64, input[1:end-1])
+        return parse(Float64, input[1:end])
     end
 
 end
@@ -18,29 +18,31 @@ end
 function getNeonData(file::String)
 
     data = CSV.read(file, DataFrame)
-    wlens = data[:,1]
-    inten = data[:,4]
+    wns = data[:,2]
+    inten = data[:,3]
     numInten = zeros(length(inten), 1)
 
     for i = 1:length(inten)
         numInten[i] = pullNumber(inten[i])
     end
 
-    return hcat(wlens, numInten)
+    return hcat(wns, numInten)
 
 end
 
 function getData(file::String)
     data = CSV.read(file, DataFrame)
-    times = data[2:end-5,2]
-    V = data[2:end-5,3]
+    times = data[2:end,2]
+    V = data[2:end,3]
 
     m = zeros(length(times), 2)
 
-    for i = 1:length(times)
-        m[i,1] = parse(Float64, times[i])
-        m[i,2] = parse(Float64, V[i])
-    end
+    # for i = 1:length(times)
+    #     #m[i,1] = parse(Float64, times[i])
+    #     #m[i,2] = parse(Float64, V[i])
+    # end
+    
+    m = hcat(times,V)
 
     return m
     
@@ -119,11 +121,11 @@ function getPeaks(data::Matrix{Float64})
 
 end
 
-function rescaleX(data::Matrix{Float64}, min::Float64, max::Float64)
+function rescaleX(data::Matrix{Float64}, start::Float64, stop::Float64)
 
-    slope = (max - min)/(data[end,1] - data[1,1])
+    slope = (stop - start)/(data[end,1] - data[1,1])
 
-    rescaled = min .+ slope * data[:,1]
+    rescaled = start .+ slope * data[:,1]
 
     return hcat(rescaled, data[:,2])
 
@@ -131,35 +133,34 @@ end
 
 let 
 
-    neondata = getNeonData("S7/Ne_I.csv")
-    shortenedData = relIntenCutOff(0.1, neondata)
+    neondata = getNeonData("S7/Ne_1_300_700.csv")
+    shortenedData = relIntenCutOff(0.01, neondata)
 
-    data4 = getData("S7/run4.csv")
-    wnmin = 21770.0 #cm-1
-    wnmax = 22900.0 #cm-1
+    data4 = getData("S7/run5.csv")
+
+    #numbers from monochromator
+    wnmin = 24100.0 #cm-1
+    wnmax = 20690.0 #cm-1
 
     wlenmax = wnum2wlen(wnmin)
     wlenmin = wnum2wlen(wnmax)
 
     smoothed = smooth(data4, 30)
-    peaks = getPeaks(smoothed)
-    peaksCuttoff = relIntenCutOff(0.2, peaks)
 
-    scaleChange = rescaleX(smoothed, wlenmin, wlenmax)
-    scaleChange_raw = rescaleX(data4, wlenmin, wlenmax)
+    scaleChange = rescaleX(smoothed, wnmin, wnmax)
+    peaks = getPeaks(scaleChange)
+    peaksCuttoff = relIntenCutOff(0.2, peaks)
+    scaleChange_raw = rescaleX(data4, wnmin, wnmax)
 
 
 
     pygui(true)
     plot(scaleChange_raw[:,1], scaleChange_raw[:,2])
     plot(scaleChange[:,1], scaleChange[:,2])
+    scatter(peaksCuttoff[:,1], peaksCuttoff[:,2], c = "blue")
     for row in eachrow(shortenedData)
-        vlines(row[1], 1, 1 + row[2] * .01, color = "red")
+        vlines(row[1], 1, 1 + row[2] * .001, color = "red")
     end
-
-
-
-
 
     # plot(data4[:,1], data4[:,2])
     # plot(smoothed[:,1], smoothed[:,2])
