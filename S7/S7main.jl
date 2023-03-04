@@ -2,10 +2,13 @@ using CSV
 using DataFrames
 using PyPlot
 using Peaks
+using LinearAlgebra
 using Statistics
 
 
 function pullNumber(input)
+
+    #parses string input for a float64
 
     if(input[end] == '*' || input[end] == 'f')
         return parse(Float64, input[1:end-1])
@@ -16,6 +19,8 @@ function pullNumber(input)
 end
 
 function getNeonData(file::String)
+
+    #pulls wavenumbers and relative intensity from file
 
     data = CSV.read(file, DataFrame)
     wns = data[:,2]
@@ -31,6 +36,10 @@ function getNeonData(file::String)
 end
 
 function getData(file::String)
+
+    #pulls test data from "file"
+    #returns [time, voltage]
+
     data = CSV.read(file, DataFrame)
     times = data[2:end,2]
     V = data[2:end,3]
@@ -38,8 +47,8 @@ function getData(file::String)
     m = zeros(length(times), 2)
 
     # for i = 1:length(times)
-    #     #m[i,1] = parse(Float64, times[i])
-    #     #m[i,2] = parse(Float64, V[i])
+    #     m[i,1] = parse(Float64, times[i])
+    #     m[i,2] = parse(Float64, V[i])
     # end
     
     m = hcat(times,V)
@@ -49,6 +58,10 @@ function getData(file::String)
 end
 
 function relIntenCutOff(relInten::Float64, data::Matrix{Float64})
+
+    #relInten: lower limit to values to be included
+    #data: nx2 matrix containing [time, intensity/voltage]
+    #returns: mx2 matrix where m is the number of data points above the relInensity cutoff
 
     m = Array{Float64}(undef, 0, 2)
     compare = maximum(data[:,2]) * relInten
@@ -60,6 +73,22 @@ function relIntenCutOff(relInten::Float64, data::Matrix{Float64})
     end
     return m
     
+end
+
+function rangeCutOff(range::Vector{Float64}, data::Matrix{Float64})
+
+    #range: 2 element vecotr containing [lowerlim, upperlim]
+    #data: 
+
+    m = Array{Float64}(undef, 0, 2)
+
+    for value in eachrow(data)
+        if value[1] >= range[1] && value[1] <= range[2]
+            m = vcat(m, value')
+        end
+    end
+
+    return m
 end
 
 function wlen2wnum(wavelength::Float64)
@@ -131,36 +160,100 @@ function rescaleX(data::Matrix{Float64}, start::Float64, stop::Float64)
 
 end
 
+function rescaleX_mb(data::Matrix{Float64}, m::Float64, b::Float64)
+
+    rescaled = b .+ m * data[:,1]
+
+    return hcat(rescaled, data[:,2])
+
+end
+
+function linFit(times::Vector{Float64}, wavenumbers::Vector{Float64}, weights::Vector{Float64})
+
+    W = diagm(weights)
+    A = hcat(times, ones(length(times)))
+    
+    x = (A' * W * A)\(A' * W * wavenumbers)
+
+    return x
+
+end
+
+function normalizeData!(data::Matrix{Float64})
+
+    data[:,2] = data[:,2] ./ maximum(data[:,2])
+
+end
+
 let 
 
+    ###########parameters############
+    
+        dataSmoothingNumber = 30
+
+        #numbers from monochromator correspondding to the file above
+        wnstart = 24800.0 #cm-1
+        wnstop = 22400.0 #cm-1
+
+        relDataPeakIntensity = 0.2
+
+        peak_timerange_low = 2700.0
+        peak_timerange_high = 2800.0
+
+        reference_peakWns = [22605.36,22593.7]
+
+        spectralLineScale = 10
+
+    ####endparameters##########
+
+    #retreive neon data and remove low intensity wn 
     neondata = getNeonData("S7/Ne_1_300_700.csv")
-    shortenedData = relIntenCutOff(0.02, neondata)
+    shortenedData = relIntenCutOff(0.01, neondata)
+    normalizeData!(shortenedData)
 
-    data = getData("S7/run6.csv")
+    #retrieve data file
+    data = getData("S7/run7.csv")
+    smoothed = smooth(data, dataSmoothingNumber)
+    normalizeData!(smoothed)
 
-    #numbers from monochromator
-    wnmin = 25440.0 #cm-1
-    wnmax = 22380.0 #cm-1
+    #time recording start and end
+    tstart = smoothed[1,1]
+    tend = smoothed[end,1]
 
-    smoothed = smooth(data, 30)
+    #get line parameters for monochromator readings
+    roughLine = linFit([tstart, tend], [wnstart, wnstop], ones(2))
 
-    scaleChange = rescaleX(smoothed, wnmin, wnmax)
-    peaks = getPeaks(scaleChange)
-    peaksCuttoff = relIntenCutOff(0.2, peaks)
-    scaleChange_raw = rescaleX(data, wnmin, wnmax)
+    #find peaks of smoothed data
+    peaks = getPeaks(smoothed)
+    #remove peaks below a certain relative intensity
+    peaks = relIntenCutOff(relDataPeakIntensity, peaks)
+    peaksCuttoff = rangeCutOff([peak_timerange_low, peak_timerange_high], peaks)
+    print("Peaks Included: ") 
+    display(peaksCuttoff)
 
+    peakTimes = peaksCuttoff[:,1]
+    peakValues = peaksCuttoff[:,2]/maximum(peaksCuttoff[:,2])
+    fitLine = linFit(peakTimes, reference_peakWns, peakValues)
 
+    scaled_Data = rescaleX_mb(smoothed, fitLine[1], fitLine[2])
+    scaled_peaks = rescaleX_mb(peaks, fitLine[1], fitLine[2])
+    # scaled_Data = rescaleX_mb(smoothed, roughLine[1], roughLine[2])
+    # scaled_peaks = rescaleX_mb(peaks, roughLine[1], roughLine[2])
 
+    #plottings
+    wnmax = maximum(scaled_Data[:,1])
+    wnmin = minimum(scaled_Data[:,1])
     pygui(true)
     ax = gca()
-    ax[:set_xlim]([wnmax,wnmin])
-    ax[:set_ylim]([0, maximum(data[:,2]) + 1])
-    plot(scaleChange_raw[:,1], scaleChange_raw[:,2])
-    plot(scaleChange[:,1], scaleChange[:,2])
-    scatter(peaksCuttoff[:,1], peaksCuttoff[:,2], c = "blue")
-    # for row in eachrow(shortenedData)
-    #     vlines(row[1], 1, 1 + row[2] * .001, color = "red")
-    # end
+    ax[:set_xlim]([wnmin,wnmax])
+    ax[:set_ylim]([0, 1.05])
+    #plot(scaled_Data_raw[:,1], scaled_Data_raw[:,2])
+    plot(scaled_Data[:,1], scaled_Data[:,2], color = "orange")
+    scatter(scaled_peaks[:,1], scaled_peaks[:,2], c = "blue")
+
+    for row in eachrow(shortenedData)
+        vlines(row[1], 0, row[2] * spectralLineScale, color = "red")
+    end
 
     # plot(data4[:,1], data4[:,2])
     # plot(smoothed[:,1], smoothed[:,2])
