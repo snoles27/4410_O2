@@ -1,9 +1,17 @@
 
+#general things to ignore
 practicePlotting.jl
 Lab Report 1 Gather
 .png
 .csv
-.icloud
+.DS_Store
+
+# ignoring all the icloud files
+.run7.csv.icloud
+.run4.csv.icloud
+.run5.csv.icloud
+.run6.csv.icloud
+
 
 
 
