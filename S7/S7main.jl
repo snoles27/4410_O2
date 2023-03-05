@@ -188,7 +188,7 @@ end
 let 
 
     ###########parameters############
-    
+
         dataSmoothingNumber = 30
 
         #numbers from monochromator correspondding to the file above
@@ -208,8 +208,8 @@ let
 
     #retreive neon data and remove low intensity wn 
     neondata = getNeonData("S7/Ne_1_300_700.csv")
-    shortenedData = relIntenCutOff(0.01, neondata)
-    normalizeData!(shortenedData)
+    shortenedNeon = relIntenCutOff(0.01, neondata)
+    normalizeData!(shortenedNeon)
 
     #retrieve data file
     data = getData("S7/run7.csv")
@@ -232,7 +232,7 @@ let
     display(peaksCuttoff)
 
     peakTimes = peaksCuttoff[:,1]
-    peakValues = peaksCuttoff[:,2]/maximum(peaksCuttoff[:,2])
+    peakValues = peaksCuttoff[:,2]
     fitLine = linFit(peakTimes, reference_peakWns, peakValues)
 
     scaled_Data = rescaleX_mb(smoothed, fitLine[1], fitLine[2])
@@ -251,7 +251,7 @@ let
     plot(scaled_Data[:,1], scaled_Data[:,2], color = "orange")
     scatter(scaled_peaks[:,1], scaled_peaks[:,2], c = "blue")
 
-    for row in eachrow(shortenedData)
+    for row in eachrow(shortenedNeon)
         vlines(row[1], 0, row[2] * spectralLineScale, color = "red")
     end
 
