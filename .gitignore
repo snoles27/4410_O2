@@ -6,7 +6,7 @@ Lab Report 1 Gather
 .csv
 .DS_Store
 
-# ignoring all the icloud files
+# ignoring all the icloud data files
 .run7.csv.icloud
 .run4.csv.icloud
 .run5.csv.icloud

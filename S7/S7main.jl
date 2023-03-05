@@ -78,7 +78,8 @@ end
 function rangeCutOff(range::Vector{Float64}, data::Matrix{Float64})
 
     #range: 2 element vecotr containing [lowerlim, upperlim]
-    #data: 
+    #data: nx2 matrix with time data in first column and value data in second column.
+    #returns: rows of "data" with times within the range
 
     m = Array{Float64}(undef, 0, 2)
 
@@ -109,12 +110,12 @@ end
 
 function smooth(data::Matrix{Float64}, averageNumber::Int)
 
+    #performs moving average of length "averageNumber" over data in "data"
+
     dataNum = size(data)[1]
     smoothed = zeros(dataNum,1)
     lowEnd = round(Int, averageNumber/2)
     highEnd = averageNumber - lowEnd
-
-
 
     for i = 1:dataNum
 
@@ -138,6 +139,8 @@ end
 
 function getPeaks(data::Matrix{Float64})
 
+    #finds all maxima within "data"
+
     peakIndexs = argmaxima(data[:,2])
 
     peaks = zeros(length(peakIndexs),2)
@@ -150,17 +153,10 @@ function getPeaks(data::Matrix{Float64})
 
 end
 
-function rescaleX(data::Matrix{Float64}, start::Float64, stop::Float64)
+function rescaleX(data::Matrix{Float64}, m::Float64, b::Float64)
 
-    slope = (stop - start)/(data[end,1] - data[1,1])
-
-    rescaled = start .+ slope * data[:,1]
-
-    return hcat(rescaled, data[:,2])
-
-end
-
-function rescaleX_mb(data::Matrix{Float64}, m::Float64, b::Float64)
+    #linear rescaling of time data in first column of "data" following 
+    #newValue = m * oldValue + b
 
     rescaled = b .+ m * data[:,1]
 
@@ -168,7 +164,12 @@ function rescaleX_mb(data::Matrix{Float64}, m::Float64, b::Float64)
 
 end
 
+
 function linFit(times::Vector{Float64}, wavenumbers::Vector{Float64}, weights::Vector{Float64})
+
+    #performs weighted linear fit for the times wavenumber relationship
+    #all input vectors must be nx1
+    #returns: x = [m,b]
 
     W = diagm(weights)
     A = hcat(times, ones(length(times)))
@@ -181,6 +182,8 @@ end
 
 function normalizeData!(data::Matrix{Float64})
 
+    #rescales second column of "data" so max value is 1
+
     data[:,2] = data[:,2] ./ maximum(data[:,2])
 
 end
@@ -188,6 +191,9 @@ end
 let 
 
     ###########parameters############
+
+        neon_fileName = "S7/Ne_1_300_700.csv"
+        data_fileName = "S7/run7.csv"
 
         dataSmoothingNumber = 30
 
@@ -197,22 +203,29 @@ let
 
         relDataPeakIntensity = 0.2
 
+        #run6
+        # peak_timerange_low = 3500.0
+        # peak_timerange_high = 3600.0
+
+        #run7
         peak_timerange_low = 2700.0
         peak_timerange_high = 2800.0
 
-        reference_peakWns = [22605.36,22593.7]
+        reference_peakWns = [22605.2, 22593.5] #data pulled from "S7/Ne_1_300_700.csv"
 
-        spectralLineScale = 10
+        reference_rayleigh = 24691
+
+        spectralLineScale = 20
 
     ####endparameters##########
 
     #retreive neon data and remove low intensity wn 
-    neondata = getNeonData("S7/Ne_1_300_700.csv")
+    neondata = getNeonData(neon_fileName)
     shortenedNeon = relIntenCutOff(0.01, neondata)
     normalizeData!(shortenedNeon)
 
     #retrieve data file
-    data = getData("S7/run7.csv")
+    data = getData(data_fileName)
     smoothed = smooth(data, dataSmoothingNumber)
     normalizeData!(smoothed)
 
@@ -228,19 +241,19 @@ let
     #remove peaks below a certain relative intensity
     peaks = relIntenCutOff(relDataPeakIntensity, peaks)
     peaksCuttoff = rangeCutOff([peak_timerange_low, peak_timerange_high], peaks)
-    print("Peaks Included: ") 
+    print("Peaks Included in fit: ") 
     display(peaksCuttoff)
 
     peakTimes = peaksCuttoff[:,1]
     peakValues = peaksCuttoff[:,2]
     fitLine = linFit(peakTimes, reference_peakWns, peakValues)
 
-    scaled_Data = rescaleX_mb(smoothed, fitLine[1], fitLine[2])
-    scaled_peaks = rescaleX_mb(peaks, fitLine[1], fitLine[2])
-    # scaled_Data = rescaleX_mb(smoothed, roughLine[1], roughLine[2])
-    # scaled_peaks = rescaleX_mb(peaks, roughLine[1], roughLine[2])
+    scaled_Data = rescaleX(smoothed, fitLine[1], fitLine[2])
+    scaled_peaks = rescaleX(peaks, fitLine[1], fitLine[2])
+    # scaled_Data = rescaleX(smoothed, roughLine[1], roughLine[2])
+    # scaled_peaks = rescaleX(peaks, roughLine[1], roughLine[2])
 
-    #plottings
+    #plotting!
     wnmax = maximum(scaled_Data[:,1])
     wnmin = minimum(scaled_Data[:,1])
     pygui(true)
@@ -248,8 +261,8 @@ let
     ax[:set_xlim]([wnmin,wnmax])
     ax[:set_ylim]([0, 1.05])
     #plot(scaled_Data_raw[:,1], scaled_Data_raw[:,2])
-    plot(scaled_Data[:,1], scaled_Data[:,2], color = "orange")
-    scatter(scaled_peaks[:,1], scaled_peaks[:,2], c = "blue")
+    plot(scaled_Data[:,1], scaled_Data[:,2], color = "blue")
+    scatter(scaled_peaks[:,1], scaled_peaks[:,2], c = "green")
 
     for row in eachrow(shortenedNeon)
         vlines(row[1], 0, row[2] * spectralLineScale, color = "red")
