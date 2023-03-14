@@ -5,6 +5,29 @@ using Peaks
 using LinearAlgebra
 using Statistics
 
+##color pallet##
+color_base = ["#0072BD", "#D95319", "#EDB120", "#7E2F8E", "#77AC30", "#B31B1B", "000000"]
+
+wavenumberData = [
+    [0.0,0.0],          #1
+    [0.0,0.0],          #2
+    [0.0,0.0],          #3
+    [21770.0, 22900.0], #4
+    [24100.0, 20690.0], #5
+    [25440.0, 22380.0], #6
+    [24800.0, 22400.0], #7
+    [25130.0, 22330.0], #8
+    [24550.0, 22260.0], #9
+    [25490.0, 22300.0], #10
+    [23475.0, 23260.0], #11
+    [0.0,0.0],          #12
+    [23450.0, 23270.0], #13
+    [0.0, 0.0],         #14
+    [24450.0, 23050.0], #15
+    [24480.0, 22990.0], #16
+    [24410.0, 23500.0], #17
+    [24420.0, 23480.0]  #18
+]
 
 function pullNumber(input)
 
@@ -204,6 +227,50 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, color
     plotData(dataFileName, wnstart, wnstop, x -> x, color)
 end
 
+function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, dataWnRanges::Vector{Vector{Vector{Float64}}}, correction::Function, colors::Vector{String} = color_base)
+
+    numSubPlot = size(dataFileNumbers)[1]
+    fig = figure("pyplot_subplot_touching")
+    subplots_adjust(hspace=0.1)
+    oldaxis = gca()
+    colorIndex = 1
+
+    for i = 1:numSubPlot
+
+        #set up subplot to share axis
+        if(i == 1)
+            subplot(numSubPlot * 100 + 10 + i)
+        else
+            subplot(numSubPlot * 100 + 10 + i, sharex=oldaxis)
+        end
+
+        #get current axis
+        ax = gca()
+
+        #get ridd of labels if not the last plot
+        if (i != numSubPlot)
+            setp(ax1.get_xticklabels(),visible=false)
+        end
+
+        #add to plots 
+        numData = size(dataFileNumbers[i])[1]
+        for j = 1:numData
+            fileName = "S7/run" * string(dataFileNumbers[i][j]) * ".csv"
+            plotData(fileName, dataWnRanges[i][j][1], dataWnRanges[i][j][2], correction, colors[colorIndex])
+            if (colorIndex == length(colors))
+                colorIndex = 1
+            else
+                colorIndex = colorIndex + 1
+            end
+        end
+
+        oldaxis = ax
+
+    end
+
+
+end
+
 function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, correction::Function, c::String)
 
     #dataFileName: File path name to data file
@@ -231,13 +298,17 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     ax[:set_ylim]([0, maximum(smoothed[:,2])])
     plot(correctedScaleData[:,1], correctedScaleData[:,2], color = c)
     xlabel("Wavenumber " * L"($cm^{-1}$)")
-    ylabel("Relative Intensity")
+    ylabel("Intensity (a.u.)")
     
 end
 
 function wavenumberCorrection(wnmono::Float64)
 
-    ###### constants from linear fit on select peaks on run9.csv
+    #wnmono: monochromator readin of wavemnumber (cm-1)
+    #retunrs: true wavenumber determined by calibration
+
+    #current conversion function is linear
+    ###### constants from linear fit on select peaks from neon spectra in run9.csv
     m =  1.0016
     b = 81.188
     ######
