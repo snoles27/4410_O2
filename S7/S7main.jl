@@ -164,6 +164,18 @@ function rescaleX(data::Matrix{Float64}, m::Float64, b::Float64)
 
 end
 
+function rescaleX_endpoints(data::Matrix{Float64,}, start::Float64, stop::Float64)
+
+    #time recording start and end
+    tstart = data[1,1]
+    tend = data[end,1]
+
+    #get line parameters for monochromator readings
+    mb = linFit([tstart, tend], [start, stop], ones(2))
+
+    return rescaleX(data, mb[1], mb[2])
+end
+
 
 function linFit(times::Vector{Float64}, wavenumbers::Vector{Float64}, weights::Vector{Float64})
 
@@ -188,89 +200,48 @@ function normalizeData!(data::Matrix{Float64})
 
 end
 
-let 
+function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, color::String)
+    plotData(dataFileName, wnstart, wnstop, x -> x, color)
+end
 
-    ###########parameters############
+function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, correction::Function, c::String)
 
-        neon_fileName = "S7/Ne_1_300_700.csv"
-        data_fileName = "S7/run7.csv"
+    #dataFileName: File path name to data file
+    #wnstart: monochrometer reading associated with first data points
+    #wnstop: monochromator reading associated with second data points
+    #correction: function that turns estimated wavenumber from monochrometer readings to true wavenumbers
 
-        dataSmoothingNumber = 30
+    ######parameters#######
+    dataSmoothingNumber = 200
+    #######################
 
-        #numbers from monochromator correspondding to the file above
-        wnstart = 24800.0 #cm-1
-        wnstop = 22400.0 #cm-1
-
-        relDataPeakIntensity = 0.2
-
-        #run6
-        # peak_timerange_low = 3500.0
-        # peak_timerange_high = 3600.0
-
-        #run7
-        peak_timerange_low = 2700.0
-        peak_timerange_high = 2800.0
-
-        reference_peakWns = [22605.2, 22593.5] #data pulled from "S7/Ne_1_300_700.csv"
-
-        reference_rayleigh = 24691
-
-        spectralLineScale = 20
-
-    ####endparameters##########
-
-    #retreive neon data and remove low intensity wn 
-    neondata = getNeonData(neon_fileName)
-    shortenedNeon = relIntenCutOff(0.01, neondata)
-    normalizeData!(shortenedNeon)
-
-    #retrieve data file
-    data = getData(data_fileName)
+    data = getData(dataFileName)
     smoothed = smooth(data, dataSmoothingNumber)
-    normalizeData!(smoothed)
+    #normalizeData!(smoothed)
 
-    #time recording start and end
-    tstart = smoothed[1,1]
-    tend = smoothed[end,1]
-
-    #get line parameters for monochromator readings
-    roughLine = linFit([tstart, tend], [wnstart, wnstop], ones(2))
-
-    #find peaks of smoothed data
-    peaks = getPeaks(smoothed)
-    #remove peaks below a certain relative intensity
-    peaks = relIntenCutOff(relDataPeakIntensity, peaks)
-    peaksCuttoff = rangeCutOff([peak_timerange_low, peak_timerange_high], peaks)
-    print("Peaks Included in fit: ") 
-    display(peaksCuttoff)
-
-    peakTimes = peaksCuttoff[:,1]
-    peakValues = peaksCuttoff[:,2]
-    fitLine = linFit(peakTimes, reference_peakWns, peakValues)
-
-    scaled_Data = rescaleX(smoothed, fitLine[1], fitLine[2])
-    scaled_peaks = rescaleX(peaks, fitLine[1], fitLine[2])
-    # scaled_Data = rescaleX(smoothed, roughLine[1], roughLine[2])
-    # scaled_peaks = rescaleX(peaks, roughLine[1], roughLine[2])
+    rescaledData = rescaleX_endpoints(smoothed, wnstart, wnstop)
+    correctedScaleData = hcat(correction.(rescaledData[:,1]), rescaledData[:,2])
 
     #plotting!
-    wnmax = maximum(scaled_Data[:,1])
-    wnmin = minimum(scaled_Data[:,1])
+    wnmax = maximum(correctedScaleData[:,1])
+    wnmin = minimum(correctedScaleData[:,1])
     pygui(true)
     ax = gca()
     ax[:set_xlim]([wnmin,wnmax])
-    ax[:set_ylim]([0, 1.05])
-    #plot(scaled_Data_raw[:,1], scaled_Data_raw[:,2])
-    plot(scaled_Data[:,1], scaled_Data[:,2], color = "blue")
-    scatter(scaled_peaks[:,1], scaled_peaks[:,2], c = "green")
+    ax[:set_ylim]([0, maximum(smoothed[:,2])])
+    plot(correctedScaleData[:,1], correctedScaleData[:,2], color = c)
+    xlabel("Wavenumber " * L"($cm^{-1}$)")
+    ylabel("Relative Intensity")
+    
+end
 
-    for row in eachrow(shortenedNeon)
-        vlines(row[1], 0, row[2] * spectralLineScale, color = "red")
-    end
+function wavenumberCorrection(wnmono::Float64)
 
-    # plot(data4[:,1], data4[:,2])
-    # plot(smoothed[:,1], smoothed[:,2])
-    # scatter(peaksCuttoff[:,1], peaksCuttoff[:,2], c = "red")
+    ###### constants from linear fit on select peaks on run9.csv
+    m =  1.0016
+    b = 81.188
+    ######
 
+    return wnmono * m + b
 
 end
