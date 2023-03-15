@@ -227,13 +227,26 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, color
     plotData(dataFileName, wnstart, wnstop, x -> x, color)
 end
 
-function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, dataWnRanges::Vector{Vector{Vector{Float64}}}, correction::Function, colors::Vector{String} = color_base)
+function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function; colors::Vector{String} = color_base, yaxisScaling::Float64 = 1.05)
 
     numSubPlot = size(dataFileNumbers)[1]
-    fig = figure("pyplot_subplot_touching")
-    subplots_adjust(hspace=0.1)
+    fig = figure("stackedPlots")
+    subplots_adjust(hspace=0.05)
     oldaxis = gca()
     colorIndex = 1
+
+    wnmax = 0.0
+    wnmin = Inf
+    for vec in dataFileNumbers
+        for n in vec
+            if maximum(wavenumberData[n]) > wnmax
+                wnmax = maximum(wavenumberData[n])
+            end
+            if minimum(wavenumberData[n]) < wnmin
+                wnmin = minimum(wavenumberData[n])
+            end
+        end
+    end
 
     for i = 1:numSubPlot
 
@@ -246,17 +259,18 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, dataWnRanges::Vector{
 
         #get current axis
         ax = gca()
+        ax[:set_xlim]([wnmin,wnmax])
 
-        #get ridd of labels if not the last plot
+        #get rid of labels if not the last plot
         if (i != numSubPlot)
-            setp(ax1.get_xticklabels(),visible=false)
+            setp(ax.get_xticklabels(),visible=false)
         end
 
         #add to plots 
         numData = size(dataFileNumbers[i])[1]
         for j = 1:numData
             fileName = "S7/run" * string(dataFileNumbers[i][j]) * ".csv"
-            plotData(fileName, dataWnRanges[i][j][1], dataWnRanges[i][j][2], correction, colors[colorIndex])
+            plotData(fileName, wavenumberData[dataFileNumbers[i][j]][1], wavenumberData[dataFileNumbers[i][j]][2], correction, colors[colorIndex], yaxisScaling, instack = true)
             if (colorIndex == length(colors))
                 colorIndex = 1
             else
@@ -268,10 +282,22 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, dataWnRanges::Vector{
 
     end
 
+    fig.canvas.draw()
 
 end
 
-function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, correction::Function, c::String)
+function maxBelowRayleigh(data::Matrix{Float64}, thresh::Float64 = 0.5)
+
+    peaks = getPeaks(data)
+
+    justMag = peaks[:,2]
+    sorted = sort(justMag, rev = true)
+
+    return sorted[findfirst(x -> x < sorted[1] * thresh, sorted)]
+
+end
+
+function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, correction::Function, c::String, yaxisScaling::Float64 = 1.05; instack::Bool=false)
 
     #dataFileName: File path name to data file
     #wnstart: monochrometer reading associated with first data points
@@ -284,18 +310,22 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
 
     data = getData(dataFileName)
     smoothed = smooth(data, dataSmoothingNumber)
-    #normalizeData!(smoothed)
 
     rescaledData = rescaleX_endpoints(smoothed, wnstart, wnstop)
     correctedScaleData = hcat(correction.(rescaledData[:,1]), rescaledData[:,2])
+
+    plotylim = maxBelowRayleigh(correctedScaleData)
+    display(plotylim)
 
     #plotting!
     wnmax = maximum(correctedScaleData[:,1])
     wnmin = minimum(correctedScaleData[:,1])
     pygui(true)
     ax = gca()
-    ax[:set_xlim]([wnmin,wnmax])
-    ax[:set_ylim]([0, maximum(smoothed[:,2])])
+    if(!instack)
+        ax[:set_xlim]([wnmin,wnmax])
+    end
+    ax[:set_ylim]([0, plotylim * yaxisScaling])
     plot(correctedScaleData[:,1], correctedScaleData[:,2], color = c)
     xlabel("Wavenumber " * L"($cm^{-1}$)")
     ylabel("Intensity (a.u.)")
