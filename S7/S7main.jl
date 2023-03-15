@@ -235,19 +235,6 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function;
     oldaxis = gca()
     colorIndex = 1
 
-    wnmax = 0.0
-    wnmin = Inf
-    for vec in dataFileNumbers
-        for n in vec
-            if maximum(wavenumberData[n]) > wnmax
-                wnmax = maximum(wavenumberData[n])
-            end
-            if minimum(wavenumberData[n]) < wnmin
-                wnmin = minimum(wavenumberData[n])
-            end
-        end
-    end
-
     for i = 1:numSubPlot
 
         #set up subplot to share axis
@@ -259,7 +246,6 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function;
 
         #get current axis
         ax = gca()
-        #ax[:set_xlim]([wnmin,wnmax])
 
         #get rid of labels if not the last plot
         if (i != numSubPlot)
@@ -270,7 +256,7 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function;
         numData = size(dataFileNumbers[i])[1]
         for j = 1:numData
             fileName = "S7/run" * string(dataFileNumbers[i][j]) * ".csv"
-            plotData(fileName, wavenumberData[dataFileNumbers[i][j]][1], wavenumberData[dataFileNumbers[i][j]][2], correction, colors[colorIndex], yaxisScaling, instack = true)
+            plotData(fileName, wavenumberData[dataFileNumbers[i][j]][1], wavenumberData[dataFileNumbers[i][j]][2], correction, colors[colorIndex], yaxisScaling)
             if (colorIndex == length(colors))
                 colorIndex = 1
             else
@@ -282,7 +268,20 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function;
 
     end
 
-    oldaxis[:set_xlim]([wnmin,wnmax])
+    #old code for maybe setting all x scales after the fact
+    # wnmax = 0.0
+    # wnmin = Inf
+    # for vec in dataFileNumbers
+    #     for n in vec
+    #         if maximum(wavenumberData[n]) > wnmax
+    #             wnmax = maximum(wavenumberData[n])
+    #         end
+    #         if minimum(wavenumberData[n]) < wnmin
+    #             wnmin = minimum(wavenumberData[n])
+    #         end
+    #     end
+    # end
+    #oldaxis[:set_xlim]([wnmin,wnmax])
 
     fig.canvas.draw()
 
@@ -299,7 +298,7 @@ function maxBelowRayleigh(data::Matrix{Float64}, thresh::Float64 = 0.5)
 
 end
 
-function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, correction::Function, c::String, yaxisScaling::Float64 = 1.05; instack::Bool=false)
+function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, correction::Function, c::String, yaxisScaling::Float64 = 1.05; independentXScale::Bool=true)
 
     #dataFileName: File path name to data file
     #wnstart: monochrometer reading associated with first data points
@@ -317,6 +316,7 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     correctedScaleData = hcat(correction.(rescaledData[:,1]), rescaledData[:,2])
 
     correctedScaleData = centerOnRayleigh(correctedScaleData)
+    display(correctedScaleData[:,1])
 
     plotylim = maxBelowRayleigh(correctedScaleData)
 
@@ -325,12 +325,12 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     wnmin = minimum(correctedScaleData[:,1])
     pygui(true)
     ax = gca()
-    if(!instack)
+    if(independentXScale)
         ax[:set_xlim]([wnmin,wnmax])
     end
     ax[:set_ylim]([0, plotylim * yaxisScaling])
     plot(correctedScaleData[:,1], correctedScaleData[:,2], color = c)
-    xlabel("Wavenumber " * L"($cm^{-1}$)")
+    xlabel("Raman Shift " * L"($cm^{-1}$)")
     ylabel("Intensity (a.u.)")
     
 end
