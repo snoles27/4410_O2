@@ -29,6 +29,10 @@ wavenumberData = [
     [24420.0, 23480.0]  #18
 ]
 
+labels = [
+    "1", "2", "3", "4", "5", "C6H6", "CHCl3", "CCl4", "9", "CS2", "11", "12", "13", "14", "15", "16", "17", "18"
+]
+
 function pullNumber(input)
 
     #parses string input for a float64
@@ -227,12 +231,11 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, color
     plotData(dataFileName, wnstart, wnstop, x -> x, color)
 end
 
-function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function; colors::Vector{String} = color_base, yaxisScaling::Float64 = 1.05, ramanScale::Bool = false, xLim::Vector{Float64} = [0.0,0.0], labels::Vector{String} = Vector{String}())
+function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function; colors::Vector{String} = color_base, yaxisScaling::Float64 = 1.05, ramanScale::Bool = false, xLim::Vector{Float64} = [0.0,0.0])
 
     numSubPlot = size(dataFileNumbers)[1]
     fig = figure("stackedPlots", figsize=(10,10))
-    subplots_adjust(hspace=0.08)
-    text(-1,5, "test", rotation = "vertical")
+    subplots_adjust(hspace=0.1)
     oldaxis = gca()
     colorIndex = 1
 
@@ -264,6 +267,13 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function;
                 colorIndex = colorIndex + 1
             end
         end
+
+        if (i != numSubPlot)
+            xlabel("")
+        end
+
+        #display(labels[dataFileNumbers[i]])
+        legend(labels[dataFileNumbers[i]])
 
         oldaxis = ax
 

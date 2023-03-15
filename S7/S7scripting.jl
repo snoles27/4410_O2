@@ -15,10 +15,11 @@ let
     # plotData("S7/run8.csv", 25130.0, 22330.0, wavenumberCorrection, "#b31b1b")
     # plotData("S7/run7.csv", 24800.0, 22400.0, wavenumberCorrection, "blue")
     # plotData("S7/run6.csv", 25440.0, 22380.0, wavenumberCorrection, "green")
-    # legend(["Vial 1", "Vial 2", "Vial 3", "Vial 4"])
+    #legend(["Vial 1", "Vial 2", "Vial 3", "Vial 4"])
 
 
-    stackedPlot([[10], [7], [8], [6]], wavenumberCorrection, ramanScale = true, xLim = [-1100.0, 500.0])
-    
+    #stackedPlot([[10], [7], [8], [6]], wavenumberCorrection, ramanScale = true, xLim = [-1100.0, 500.0])
+    stackedPlot([[17,18]], wavenumberCorrection, ramanScale = true)
+
 
 end
