@@ -227,11 +227,12 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, color
     plotData(dataFileName, wnstart, wnstop, x -> x, color)
 end
 
-function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function; colors::Vector{String} = color_base, yaxisScaling::Float64 = 1.05, ramanScale::Bool = false, xLim::Vector{Float64} = [0.0,0.0])
+function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function; colors::Vector{String} = color_base, yaxisScaling::Float64 = 1.05, ramanScale::Bool = false, xLim::Vector{Float64} = [0.0,0.0], labels::Vector{String} = Vector{String}())
 
     numSubPlot = size(dataFileNumbers)[1]
-    fig = figure("stackedPlots")
-    subplots_adjust(hspace=0.1)
+    fig = figure("stackedPlots", figsize=(10,10))
+    subplots_adjust(hspace=0.08)
+    text(-1,5, "test", rotation = "vertical")
     oldaxis = gca()
     colorIndex = 1
 
@@ -286,6 +287,7 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function;
     if(xLim[1] != 0.0)
         oldaxis[:set_xlim](xLim)
     end
+    
 
     fig.canvas.draw()
 
