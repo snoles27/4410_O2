@@ -259,7 +259,7 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function;
 
         #get current axis
         ax = gca()
-        ax[:set_xlim]([wnmin,wnmax])
+        #ax[:set_xlim]([wnmin,wnmax])
 
         #get rid of labels if not the last plot
         if (i != numSubPlot)
@@ -281,6 +281,8 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function;
         oldaxis = ax
 
     end
+
+    oldaxis[:set_xlim]([wnmin,wnmax])
 
     fig.canvas.draw()
 
@@ -314,8 +316,9 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     rescaledData = rescaleX_endpoints(smoothed, wnstart, wnstop)
     correctedScaleData = hcat(correction.(rescaledData[:,1]), rescaledData[:,2])
 
+    correctedScaleData = centerOnRayleigh(correctedScaleData)
+
     plotylim = maxBelowRayleigh(correctedScaleData)
-    display(plotylim)
 
     #plotting!
     wnmax = maximum(correctedScaleData[:,1])
@@ -344,5 +347,32 @@ function wavenumberCorrection(wnmono::Float64)
     ######
 
     return wnmono * m + b
+
+end
+
+function findRayleighCenter(data::Matrix{Float64}, thresh::Float64 = 0.9)
+
+    peaks = getPeaks(data)
+    onlyRayleigh = Array{Float64}(undef, 0, 2)
+    max = maximum(peaks[:,2])
+
+    for row in eachrow(peaks)
+        if row[2] > thresh * max
+            onlyRayleigh = vcat(onlyRayleigh, row')
+        end
+    end
+
+    return (maximum(onlyRayleigh[:,1]) + minimum(onlyRayleigh[:,1]))/2
+
+end
+
+function centerOnRayleigh(data::Matrix)
+
+    center = findRayleighCenter(data)
+    new = zeros(length(data[:,1]), length(data[1,:]))
+    new[:,1] = data[:,1] .- center
+    new[:,2] = data[:,2]
+    
+    return new
 
 end
