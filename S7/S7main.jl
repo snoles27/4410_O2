@@ -227,11 +227,11 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, color
     plotData(dataFileName, wnstart, wnstop, x -> x, color)
 end
 
-function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function; colors::Vector{String} = color_base, yaxisScaling::Float64 = 1.05)
+function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function; colors::Vector{String} = color_base, yaxisScaling::Float64 = 1.05, ramanScale::Bool = false, xLim::Vector{Float64} = [0.0,0.0])
 
     numSubPlot = size(dataFileNumbers)[1]
     fig = figure("stackedPlots")
-    subplots_adjust(hspace=0.05)
+    subplots_adjust(hspace=0.1)
     oldaxis = gca()
     colorIndex = 1
 
@@ -256,7 +256,7 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function;
         numData = size(dataFileNumbers[i])[1]
         for j = 1:numData
             fileName = "S7/run" * string(dataFileNumbers[i][j]) * ".csv"
-            plotData(fileName, wavenumberData[dataFileNumbers[i][j]][1], wavenumberData[dataFileNumbers[i][j]][2], correction, colors[colorIndex], yaxisScaling)
+            plotData(fileName, wavenumberData[dataFileNumbers[i][j]][1], wavenumberData[dataFileNumbers[i][j]][2], correction, colors[colorIndex], yaxisScaling, ramanScale = ramanScale)
             if (colorIndex == length(colors))
                 colorIndex = 1
             else
@@ -283,6 +283,10 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function;
     # end
     #oldaxis[:set_xlim]([wnmin,wnmax])
 
+    if(xLim[1] != 0.0)
+        oldaxis[:set_xlim](xLim)
+    end
+
     fig.canvas.draw()
 
 end
@@ -298,7 +302,7 @@ function maxBelowRayleigh(data::Matrix{Float64}, thresh::Float64 = 0.5)
 
 end
 
-function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, correction::Function, c::String, yaxisScaling::Float64 = 1.05; independentXScale::Bool=true)
+function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, correction::Function, c::String, yaxisScaling::Float64 = 1.05; independentXScale::Bool=true, ramanScale::Bool = false)
 
     #dataFileName: File path name to data file
     #wnstart: monochrometer reading associated with first data points
@@ -315,8 +319,9 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     rescaledData = rescaleX_endpoints(smoothed, wnstart, wnstop)
     correctedScaleData = hcat(correction.(rescaledData[:,1]), rescaledData[:,2])
 
-    correctedScaleData = centerOnRayleigh(correctedScaleData)
-    display(correctedScaleData[:,1])
+    if(ramanScale)
+        correctedScaleData = centerOnRayleigh(correctedScaleData)
+    end
 
     plotylim = maxBelowRayleigh(correctedScaleData)
 
@@ -330,7 +335,11 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     end
     ax[:set_ylim]([0, plotylim * yaxisScaling])
     plot(correctedScaleData[:,1], correctedScaleData[:,2], color = c)
-    xlabel("Raman Shift " * L"($cm^{-1}$)")
+    if(ramanScale)
+        xlabel("Raman Shift " * L"($cm^{-1}$)")
+    else
+        xlabel("Wavenumber " * L"($cm^{-1}$)")
+    end
     ylabel("Intensity (a.u.)")
     
 end
