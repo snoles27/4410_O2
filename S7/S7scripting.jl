@@ -19,7 +19,7 @@ let
 
 
     #stackedPlot([[10], [7], [8], [6]], wavenumberCorrection, ramanScale = true, xLim = [-1100.0, 500.0])
-    stackedPlot([[17,18]], wavenumberCorrection, ramanScale = true)
+    stackedPlot([[17,18], [21]], wavenumberCorrection, ramanScale = true)
 
 
 end

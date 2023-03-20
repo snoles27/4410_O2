@@ -26,11 +26,14 @@ wavenumberData = [
     [24450.0, 23050.0], #15
     [24480.0, 22990.0], #16
     [24410.0, 23500.0], #17
-    [24420.0, 23480.0]  #18
+    [24420.0, 23480.0], #18
+    [24500.0, 23480.0], #19
+    [24390.0, 23490.0], #20
+    [24400.0, 23200.0]  #21
 ]
 
 labels = [
-    "1", "2", "3", "4", "5", "C6H6", "CHCl3", "CCl4", "9", "CS2", "11", "12", "13", "14", "15", "16", "17", "18"
+    "1", "2", "3", "4", "5", "C6H6", "CHCl3", "CCl4", "9", "CS2", "11", "12", "13", "14", "15", "16", "CHCl3 (Perpendicular)", "CHCl3 (Parallel)", "CHCl3 (Parallel)", "CHCl3 (Perpendicular)", "CCl4 (Perpendicular)"
 ]
 
 function pullNumber(input)
@@ -235,7 +238,7 @@ function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function;
 
     numSubPlot = size(dataFileNumbers)[1]
     fig = figure("stackedPlots", figsize=(10,10))
-    subplots_adjust(hspace=0.1)
+    subplots_adjust(hspace=0.15)
     oldaxis = gca()
     colorIndex = 1
 
@@ -338,6 +341,8 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     plotylim = maxBelowRayleigh(correctedScaleData)
 
     #plotting!
+    PyPlot.matplotlib[:rc]("text", usetex=false) # allow tex rendering
+    rc("font", family="times", weight="normal", size = "16")
     wnmax = maximum(correctedScaleData[:,1])
     wnmin = minimum(correctedScaleData[:,1])
     pygui(true)
@@ -348,9 +353,10 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     ax[:set_ylim]([0, plotylim * yaxisScaling])
     plot(correctedScaleData[:,1], correctedScaleData[:,2], color = c)
     if(ramanScale)
-        xlabel("Raman Shift " * L"($cm^{-1}$)")
+        #xlabel("Raman Shift " * "(\$ \\mathrm{cm}^{-1}\$)")
+        xlabel("Raman Shift " * "(cm \$^{-1}\$)")
     else
-        xlabel("Wavenumber " * L"($cm^{-1}$)")
+        xlabel("Wavenumber " * "(cm \$^{-1}\$)")
     end
     ylabel("Intensity (a.u.)")
     
@@ -390,6 +396,8 @@ end
 function centerOnRayleigh(data::Matrix)
 
     center = findRayleighCenter(data)
+    print("Rayleigh Center: ")
+    println(center)
     new = zeros(length(data[:,1]), length(data[1,:]))
     new[:,1] = data[:,1] .- center
     new[:,2] = data[:,2]
