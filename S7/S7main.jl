@@ -29,12 +29,15 @@ wavenumberData = [
     [24420.0, 23480.0], #18
     [24500.0, 23480.0], #19
     [24390.0, 23490.0], #20
-    [24400.0, 23200.0]  #21
+    [24400.0, 23200.0], #21
+    [24460.0, 23200.0]  #22
 ]
 
 labels = [
-    "1", "2", "3", "4", "5", "C6H6", "CHCl3", "CCl4", "9", "CS2", "11", "12", "13", "14", "15", "16", "CHCl3 (Perpendicular)", "CHCl3 (Parallel)", "CHCl3 (Parallel)", "CHCl3 (Perpendicular)", "CCl4 (Perpendicular)"
+    "1", "2", "3", "4", "5", "C6H6", "CHCl3", "CCl4", "9", "CS2", "11", "12", "13", "14", "15", "16", "CHCl3 (Perpendicular)", "CHCl3 (Parallel)", "CHCl3 (Parallel)", "CHCl3 (Perpendicular)", "CCl4 (Perpendicular)", "CCl4 (Parallel)"
 ]
+
+globe_rayleighCenter = 24440.0
 
 function pullNumber(input)
 
@@ -234,7 +237,7 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, color
     plotData(dataFileName, wnstart, wnstop, x -> x, color)
 end
 
-function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function; colors::Vector{String} = color_base, yaxisScaling::Float64 = 1.05, ramanScale::Bool = false, xLim::Vector{Float64} = [0.0,0.0])
+function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function; colors::Vector{String} = color_base, yaxisScaling::Float64 = 1.05, ramanScale::Int = 0, xLim::Vector{Float64} = [0.0,0.0])
 
     numSubPlot = size(dataFileNumbers)[1]
     fig = figure("stackedPlots", figsize=(10,10))
@@ -317,7 +320,7 @@ function maxBelowRayleigh(data::Matrix{Float64}, thresh::Float64 = 0.5)
 
 end
 
-function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, correction::Function, c::String, yaxisScaling::Float64 = 1.05; independentXScale::Bool=true, ramanScale::Bool = false)
+function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, correction::Function, c::String, yaxisScaling::Float64 = 1.05; independentXScale::Bool=true, ramanScale::Int = 0)
 
     #dataFileName: File path name to data file
     #wnstart: monochrometer reading associated with first data points
@@ -334,8 +337,12 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     rescaledData = rescaleX_endpoints(smoothed, wnstart, wnstop)
     correctedScaleData = hcat(correction.(rescaledData[:,1]), rescaledData[:,2])
 
-    if(ramanScale)
+    if(ramanScale == 1)
         correctedScaleData = centerOnRayleigh(correctedScaleData)
+    end
+
+    if(ramanScale == 2)
+        correctedScaleData = centerOnRayleigh(correctedScaleData, globe_rayleighCenter)
     end
 
     plotylim = maxBelowRayleigh(correctedScaleData)
@@ -352,7 +359,7 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     end
     ax[:set_ylim]([0, plotylim * yaxisScaling])
     plot(correctedScaleData[:,1], correctedScaleData[:,2], color = c)
-    if(ramanScale)
+    if(ramanScale != 0)
         #xlabel("Raman Shift " * "(\$ \\mathrm{cm}^{-1}\$)")
         xlabel("Raman Shift " * "(cm \$^{-1}\$)")
     else
@@ -398,6 +405,17 @@ function centerOnRayleigh(data::Matrix)
     center = findRayleighCenter(data)
     print("Rayleigh Center: ")
     println(center)
+    new = centerOnRayleigh(data, center)
+    # new = zeros(length(data[:,1]), length(data[1,:]))
+    # new[:,1] = data[:,1] .- center
+    # new[:,2] = data[:,2]
+
+    return new
+
+end
+
+function centerOnRayleigh(data::Matrix, center::Float64)
+
     new = zeros(length(data[:,1]), length(data[1,:]))
     new[:,1] = data[:,1] .- center
     new[:,2] = data[:,2]
