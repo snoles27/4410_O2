@@ -30,11 +30,46 @@ wavenumberData = [
     [24500.0, 23480.0], #19
     [24390.0, 23490.0], #20
     [24400.0, 23200.0], #21
-    [24460.0, 23200.0]  #22
+    [24460.0, 23200.0], #22
+    [24450.0, 24280.0], #23
+    [0.0, 0.0],         #24
+    [24470.0, 24270.0], #25
+    [24450.0, 24260.0], #26
+    [24450.0, 24240.0], #27
+    [24100.0, 22000.0] #28
+
+
 ]
 
 labels = [
-    "1", "2", "3", "4", "5", "C6H6", "CHCl3", "CCl4", "9", "CS2", "11", "12", "13", "14", "15", "16", "CHCl3 (Perpendicular)", "CHCl3 (Parallel)", "CHCl3 (Parallel)", "CHCl3 (Perpendicular)", "CCl4 (Perpendicular)", "CCl4 (Parallel)"
+    "1",     #1
+    "2",     #2
+    "3",     #3
+    "4",     #4
+    "5",     #5
+    "C6H6",  #6 
+    "CHCl3", #7
+    "CCl4",  #8
+    "Neon 1",#9
+    "CS2",   #10
+    "11",    #11
+    "12",    #12
+    "13",    #13
+    "14",    #14
+    "15",    #15
+    "16",    #16
+    "CHCl3 (Perpendicular)", #17
+    "CHCl3 (Parallel)",      #18
+    "CHCl3 (Parallel)",      #19
+    "CHCl3 (Perpendicular)", #20
+    "CCl4 (Perpendicular)",  #21
+    "CCl4 (Parallel)",       #22
+    "CCl4 Rayleigh", #23
+    "bad", #24
+    "CHCl3 Rayleigh 1", #25
+    "CHCl3 Rayleigh 2", #26
+    "C6H6  Rayleigh",   #27
+    "Neon 2" #28
 ]
 
 globe_rayleighCenter = 24440.0
@@ -326,9 +361,13 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     #wnstart: monochrometer reading associated with first data points
     #wnstop: monochromator reading associated with second data points
     #correction: function that turns estimated wavenumber from monochrometer readings to true wavenumbers
+    #c: Color for plot
+    #yaxisScaling: number to scale y axis by 
+    #independentXScale
+    #raman scale: 0 --> just wavenumber, 1 --> find rayleigh peak canter and set that to 0, 2--> set center based on hardcoded value "globe_rayleighCenter"
 
     ######parameters#######
-    dataSmoothingNumber = 200
+    dataSmoothingNumber = 50
     #######################
 
     data = getData(dataFileName)
@@ -346,6 +385,8 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     end
 
     plotylim = maxBelowRayleigh(correctedScaleData)
+    
+    #plotylim = 15.0 override yaxis limit if neededd for specific plot
 
     #plotting!
     PyPlot.matplotlib[:rc]("text", usetex=false) # allow tex rendering
