@@ -4,6 +4,8 @@ using PyPlot
 using Peaks
 using LinearAlgebra
 using Statistics
+using DataFitting
+using LsqFit
 
 ##color pallet##
 color_base = ["#0072BD", "#D95319", "#EDB120", "#7E2F8E", "#77AC30", "#B31B1B", "000000"]
@@ -36,7 +38,8 @@ wavenumberData = [
     [24470.0, 24270.0], #25
     [24450.0, 24260.0], #26
     [24450.0, 24240.0], #27
-    [24100.0, 22000.0] #28
+    [24100.0, 22000.0], #28
+    [24099.0, 22275.0]  #29
 
 
 ]
@@ -69,7 +72,8 @@ labels = [
     "CHCl3 Rayleigh 1", #25
     "CHCl3 Rayleigh 2", #26
     "C6H6  Rayleigh",   #27
-    "Neon 2" #28
+    "Neon 2", #28
+    "Neon 3" #29
 ]
 
 globe_rayleighCenter = 24440.0
@@ -108,21 +112,31 @@ function getData(file::String)
     #pulls test data from "file"
     #returns [time, voltage]
 
+    # data = CSV.read(file, DataFrame)
+    # times = data[2:end,2]
+    # V = data[2:end,3]
+
+    # m = zeros(length(times), 2)
+
+    # # for i = 1:length(times)
+    # #     m[i,1] = parse(Float64, times[i])
+    # #     m[i,2] = parse(Float64, V[i])
+    # # end
+    
+    # m = hcat(times,V)
+
+    return getData(file, 2, 3)
+    
+end
+
+function getData(file::String, xindex::Int, yindex::Int)
+
     data = CSV.read(file, DataFrame)
-    times = data[2:end,2]
-    V = data[2:end,3]
+    xdata = data[2:end, xindex]
+    ydata = data[2:end, yindex]
 
-    m = zeros(length(times), 2)
+    return hcat(xdata, ydata)
 
-    # for i = 1:length(times)
-    #     m[i,1] = parse(Float64, times[i])
-    #     m[i,2] = parse(Float64, V[i])
-    # end
-    
-    m = hcat(times,V)
-
-    return m
-    
 end
 
 function relIntenCutOff(relInten::Float64, data::Matrix{Float64})
@@ -274,6 +288,7 @@ end
 
 function stackedPlot(dataFileNumbers::Vector{Vector{Int}}, correction::Function; colors::Vector{String} = color_base, yaxisScaling::Float64 = 1.05, ramanScale::Int = 0, xLim::Vector{Float64} = [0.0,0.0])
 
+    pygui(true)
     numSubPlot = size(dataFileNumbers)[1]
     fig = figure("stackedPlots", figsize=(10,10))
     subplots_adjust(hspace=0.15)
@@ -370,23 +385,17 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
     dataSmoothingNumber = 50
     #######################
 
-    data = getData(dataFileName)
-    smoothed = smooth(data, dataSmoothingNumber)
+    # data = getData(dataFileName)
+    # smoothed = smooth(data, dataSmoothingNumber)
 
-    rescaledData = rescaleX_endpoints(smoothed, wnstart, wnstop)
-    correctedScaleData = hcat(correction.(rescaledData[:,1]), rescaledData[:,2])
+    # rescaledData = rescaleX_endpoints(smoothed, wnstart, wnstop)
+    # correctedScaleData = hcat(correction.(rescaledData[:,1]), rescaledData[:,2])
 
-    if(ramanScale == 1)
-        correctedScaleData = centerOnRayleigh(correctedScaleData)
-    end
+    correctedScaleData = getCorrectedData(dataFileName, wnstart, wnstop, correction, ramanScale, dataSmoothingNumber)
 
-    if(ramanScale == 2)
-        correctedScaleData = centerOnRayleigh(correctedScaleData, globe_rayleighCenter)
-    end
-
-    plotylim = maxBelowRayleigh(correctedScaleData)
+    #plotylim = maxBelowRayleigh(correctedScaleData)
     
-    #plotylim = 15.0 override yaxis limit if neededd for specific plot
+    plotylim = 15.0 #override yaxis limit if neededd for specific plot
 
     #plotting!
     PyPlot.matplotlib[:rc]("text", usetex=false) # allow tex rendering
@@ -417,8 +426,8 @@ function wavenumberCorrection(wnmono::Float64)
 
     #current conversion function is linear
     ###### constants from linear fit on select peaks from neon spectra in run9.csv
-    m =  1.0016
-    b = 81.188
+    m =  1.00105
+    b = 94.94
     ######
 
     return wnmono * m + b
@@ -463,4 +472,59 @@ function centerOnRayleigh(data::Matrix, center::Float64)
     
     return new
 
+end
+
+function getCorrectedData(fileName::String, wnstart::Float64, wnstop::Float64, correction::Function, ramanScale::Int = 0, dataSmoothingNumber::Int = 50)
+
+    data = getData(fileName)
+    smoothed = smooth(data, dataSmoothingNumber)
+
+    rescaledData = rescaleX_endpoints(smoothed, wnstart, wnstop)
+    correctedScaleData = hcat(correction.(rescaledData[:,1]), rescaledData[:,2])
+
+    if(ramanScale == 1)
+        correctedScaleData = centerOnRayleigh(correctedScaleData)
+    end
+
+    if(ramanScale == 2)
+        correctedScaleData = centerOnRayleigh(correctedScaleData, globe_rayleighCenter)
+    end
+
+    return correctedScaleData
+
+end
+
+function getCorrectedData(dataNumber::Int, correction::Function; ramanScale::Int = 0, dataSmoothingNumber::Int = 50)
+
+    fileName = "S7/run" * string(dataNumber) * ".csv"
+    wnstart = wavenumberData[dataNumber][1]
+    wnstop = wavenumberData[dataNumber][2]
+
+    data = getData(fileName)
+    smoothed = smooth(data, dataSmoothingNumber)
+
+    rescaledData = rescaleX_endpoints(smoothed, wnstart, wnstop)
+    correctedScaleData = hcat(correction.(rescaledData[:,1]), rescaledData[:,2])
+
+    if(ramanScale == 1)
+        correctedScaleData = centerOnRayleigh(correctedScaleData)
+    end
+
+    if(ramanScale == 2)
+        correctedScaleData = centerOnRayleigh(correctedScaleData, globe_rayleighCenter)
+    end
+
+    return correctedScaleData
+
+end
+
+function trapInt(data::Matrix{Float64})
+
+    sum = 0
+    length = size(data[:,1])[1]
+    for i = 1:length-1
+        sum = sum + 0.5 * (data[i,2] + data[i+1,2]) * (data[i+1,1] - data[i,1])
+    end
+    return sum 
+    
 end

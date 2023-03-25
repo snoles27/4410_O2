@@ -18,16 +18,20 @@ let
     #legend(["Vial 1", "Vial 2", "Vial 3", "Vial 4"])
 
 
-    #stackedPlot([[10], [7], [8], [6]], wavenumberCorrection, ramanScale = 0, xLim = [-1100.0, 500.0])
+    #stackedPlot([[10], [7], [8], [6]], wavenumberCorrection, ramanScale = 2, xLim = [-1100.0, 500.0])
     #stackedPlot([[10], [7], [8], [6], [9]], x->x, ramanScale = 0)
-    stackedPlot([[17,18], [21, 22]], x->x, ramanScale = 0)
+    #stackedPlot([[17,18], [21, 22]], wavenumberCorrection, ramanScale = 2)
 
     #plotting neon ones
-   # stackedPlot([[9,28]], x->x)
+    #stackedPlot([[9,28,29]], x->x)
     
     #looking at Rayleigh  peaks alone --> conclusion is to keep at 24400 +/- 10
     #need to comment out yaxis lim in plotData before running this
     #stackedPlot([[23,25,26,27]], wavenumberCorrection)
+    
+    
+
+
 
 
 
