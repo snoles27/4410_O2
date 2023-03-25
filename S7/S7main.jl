@@ -526,5 +526,5 @@ function trapInt(data::Matrix{Float64})
         sum = sum + 0.5 * (data[i,2] + data[i+1,2]) * (data[i+1,1] - data[i,1])
     end
     return sum 
-    
+
 end
