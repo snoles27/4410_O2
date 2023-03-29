@@ -393,9 +393,9 @@ function plotData(dataFileName::String, wnstart::Float64, wnstop::Float64, corre
 
     correctedScaleData = getCorrectedData(dataFileName, wnstart, wnstop, correction, ramanScale, dataSmoothingNumber)
 
-    #plotylim = maxBelowRayleigh(correctedScaleData)
+    plotylim = maxBelowRayleigh(correctedScaleData)
     
-    plotylim = 15.0 #override yaxis limit if neededd for specific plot
+    #plotylim = 15.0 #override yaxis limit if neededd for specific plot
 
     #plotting!
     PyPlot.matplotlib[:rc]("text", usetex=false) # allow tex rendering
@@ -467,7 +467,8 @@ end
 function centerOnRayleigh(data::Matrix, center::Float64)
 
     new = zeros(length(data[:,1]), length(data[1,:]))
-    new[:,1] = data[:,1] .- center
+    #new[:,1] = data[:,1] .- center
+    new[:,1] = center .- data[:,1]
     new[:,2] = data[:,2]
     
     return new

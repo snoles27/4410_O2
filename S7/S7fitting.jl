@@ -33,21 +33,30 @@ function BWF(x::Vector{Float64}, x0gIQb::Vector{Float64})
 
 end
 
-function fitLorentzian(dataNumber::Int, range::Vector{Float64}; ramanScale::Int = 0, includePlot::Bool = false)
+function fitLorentzian(dataNumber::Int, range::Vector{Float64} = [0.0,0]; ramanScale::Int = 0, includePlot::Bool = false)
 
     longdata = getCorrectedData(dataNumber, wavenumberCorrection, ramanScale = ramanScale)
-    data = rangeCutOff(range, longdata)
+    if(range[1] == 0)
+        data = longdata
+    else
+        data = rangeCutOff(range, longdata)
+    end
 
     xvals = data[:,1]
     y = data[:,2]
 
-    fit = curve_fit(lorentzian, xvals, y, [mean(range), 1.0, 1.0, 0.0])
+    fit = curve_fit(lorentzian, xvals, y, [mean([xvals[1], xvals[end]]), 1.0, 1.0, 0.0])
     param = coef(fit)
 
     if(includePlot)
-        xplot = collect(LinRange(range[1], range[2], 1000))
+        pygui(true)
+        xplot = collect(LinRange(xvals[1], xvals[end], 1000))
         plot(xvals, y)
         plot(xplot, lorentzian(xplot, param))
+        xlabel("Wavenumber " * "(cm \$^{-1}\$)")
+        ylabel("Intensity (a.u.)")
+        vlines(param[1], 0, .23, "red")
+        legend(["Data", "Lorentzian Fit", "Peak Center = " * string(round(param[1]))* "cm \$^{-1}\$"])
     end
 
     return param, stderror(fit) 
@@ -81,15 +90,39 @@ let
 
     ## Fitting Peaks ## 
 
+    #C6H6 peak ranges
     #range = [23725.0, 23850.0] #peak1 run10
     #range = [23575.0, 23700.0] #peak2 run10
+
+    ##CCl4 peak ranges
     #range = [24180.0, 24280.0] #peak1 run8
     #range = [24080.0, 24180.0] #peak2 run8
     #range = [23900.0, 24050.0] #peak3 run8
-    #range = [23550.0, 23750.0] #peak4 run8
+    range = [23550.0, 23750.0] #peak4 run8
+    #range = [24621.0, 24694.0]  #anti 1 run8
+    #range = [24720.0, 24789.0]  #anti 2 run8
+    #range = [24861.0, 24956.0]  #anti 3 run 8 (CCl4)
 
-    # fitLorentzian(10, range, includePlot = true)
-    # fitBWF(10, range, includePlot = true)
+    ##CHCl3 Peak ranges
+    #range = [24140.0, 24230.0] #peak 1 run 7 (CHCl3)
+    # range = [24030.0, 24120.0] # peak 2 
+    # range = [24066.0, 24090.0] #right sub peak of peak 2
+    # range = [24050.0,24065.0] #left sub peak of peak 2
+    # range = [23729.0,23820.0]  # peak 3
+    # range = [23620.0, 23730.0] #peak 4
+    # range = [24670.0, 24760.0] #anti 1
+    # range = [24780.0, 24860.0] #anti 2
+
+    ##C6H6 Peak ranges
+    #range = [23796.0,23866.0] #peak 1
+    #range = [23391.0,23507.0] #peak 2
+    #range = [23211.0,23302.0] #peak 3
+    #range = [22785.0,22900.0] #peak 4
+
+    fitLorentzian(8, range, includePlot = true)
+    #fitBWF(10, range, includePlot = true)
+
+    #fitLorentzian(27, includePlot = true)
 
     ###OLD###
 

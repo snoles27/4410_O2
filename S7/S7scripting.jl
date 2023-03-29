@@ -4,7 +4,7 @@ include("S7main.jl")
 let 
     
     ### Working on deplorization ratio ###
-    #stackedPlot([[17,18], [21, 22]], wavenumberCorrection, ramanScale = 0)
+    #stackedPlot([[17,18], [21, 22]], wavenumberCorrection, ramanScale = 2)
 
     # ##CCl4 deplorization ratio calcs
     # ccl4_ll = getCorrectedData(22, wavenumberCorrection)
@@ -56,7 +56,8 @@ let
     #legend(["Vial 1", "Vial 2", "Vial 3", "Vial 4"])
 
 
-    #stackedPlot([[10], [7], [8], [6]], wavenumberCorrection, ramanScale = 2, xLim = [-1100.0, 500.0])
+    stackedPlot([[10], [7], [8], [6]], wavenumberCorrection, ramanScale = 0)
+    #stackedPlot([[10], [7], [8], [6]], wavenumberCorrection, ramanScale = 2)
     #stackedPlot([[10], [7], [8], [6], [9]], x->x, ramanScale = 0)
     #stackedPlot([[17,18], [21, 22]], wavenumberCorrection, ramanScale = 2)
 
